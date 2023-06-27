@@ -1,0 +1,50 @@
+---
+- hosts: all
+  become: yes
+
+  tasks:
+
+    - name: check if cifs-utils is installed
+      shell: rpm -qa | grep cifs-utils
+      register: cifsutils_installed
+      ignore_errors: True
+      check_mode: False
+      changed_when: False
+
+    - name: run script if package installed
+      shell: sudo yum install cifs-utils -y
+      when: cifsutils_installed.rc == 1
+
+    - name: Mount PGTSAPP911 Audit Share
+      mount:
+        src: //pgtsapp911.markelcorp.markelna.com/shares/Audit
+        path: /media/pgtsapp911_audit
+        fstype: cifs
+        opts: 'username=david.johnson,password=medical1'
+        state: mounted
+      become: true
+    
+    - name: Check if machine is AD bound
+      shell: sudo echo "AD Realm Discovery" > /media/pgtsapp911_audit/`hostname`.txt && realm discover >> /media/pgtsapp911_audit/`hostname`.txt && echo "" >> /media/pgtsapp911_audit/`hostname`.txt
+      register: realmd_bound
+      changed_when: false
+      ignore_errors: true
+      tags: unixad-AD_only
+
+    - name: Copy Login DEFS
+      shell: sudo echo "Login Definitiions" >> /media/pgtsapp911_audit/`hostname`.txt && grep ^PASS /etc/login.defs >> /media/pgtsapp911_audit/`hostname`.txt && echo "" >> /media/pgtsapp911_audit/`hostname`.txt
+      ignore_errors: True
+
+    - name: Copy Services on System
+      shell: sudo echo "Services Currently Running" >> /media/pgtsapp911_audit/`hostname`.txt && sudo systemctl list-units --type=service >> /media/pgtsapp911_audit/`hostname`.txt && echo "" >> /media/pgtsapp911_audit/`hostname`.txt
+      ignore_errors: True
+
+    - name: Copy SSSD File Contents
+      shell: sudo echo "SSSD File Contents" >> /media/pgtsapp911_audit/`hostname`.txt && cat /etc/sssd/sssd.conf >> /media/pgtsapp911_audit/`hostname`.txt && echo "" >> /media/pgtsapp911_audit/`hostname`.txt
+      ignore_errors: True
+
+    - name: Unmount network share
+      mount:
+        path: /media/pgtsapp911_audit
+        state: absent
+      become: true
