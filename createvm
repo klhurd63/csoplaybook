@@ -1,0 +1,21 @@
+---
+- name: Create a VM from a template
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Clone the template
+    vmware_guest:
+      hostname: "{{ vcenter_ip }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      name: "{{ virtualmachine_hostname }}"
+      template: "{{ vcenter_system_template }}"
+      datacenter: "{{ datacenter_name }}"
+      folder: /GTS/Templates/Development/Ansible
+      state: poweredon
+      cluster: "{{ cluster_name }}"
+      hardware:
+          memory_mb: "{{ virtualmachine_mem }}"
+          num_cpus: "{{ virtualmachine_cpu }}"
+      #wait_for_ip_address: yes
