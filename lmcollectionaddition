@@ -1,0 +1,27 @@
+---
+- name: Add New Logic Monitor Collectors
+  remote_user: mklserveradmin
+  become: yes
+  become_method: sudo
+  tasks:
+# Add new collectors into the /etc/snmp/snmpd.conf file
+  ansible.builtin.blockinfile:
+    path: /etc/snmp/snmpd.conf
+    backup: yes 
+    block:  
+      rocommunity M@rk3lc0rp-RO 10.65.135.184
+      rocommunity M@rk3lc0rp-RO 10.65.135.40
+    insertafter:  
+# This configuration will add a single rich rule to Firewalld
+- name: Rich Rule to add new Collector IPs
+  ansible.posix.firewalld:
+    rich_rule: rule family=ipv4 source address=10.65.135.184 port port=161 protocal=udp accept
+    zone: public
+    permanent: true
+    immediate: true
+    state: enabled
+# This will Reload the firewalld service after modifications have been made
+- name: Always Reload firewalld #ansible.builtin.service can also be used
+  ansbile.builtin.systemd_service:
+    name: firewalld
+    state: reloaded 
